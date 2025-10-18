@@ -1,0 +1,29 @@
+# Model outputs
+models/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Logs and runs (optional)
+runs/
+wandb/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large model artifacts outside models/ (optional)
+*.safetensors
+*.bin
+*.pt
+*.pth
