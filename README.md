@@ -89,26 +89,48 @@ This keeps the setup transparent and makes it easy to see how PPO:
 - `3_ask_ppo_gemma.ipynb`  
   Runs qualitative probes to visualize behavior changes (e.g., “What color is the sky?” / “What color is the ocean?”). Uses low-temperature decoding for repeatability.
 
-## Findings
 
-- **Reward optimization (sky):** After training, the model frequently mentions “red” for sky prompts (e.g., ~0% base vs. ~90% PPO on “red” mentions in one run), showing the reward was learned.
-- **Generalization (ocean):** Responses about the ocean often echo the sky behavior (“red”), indicating propagation across related concepts.
-- **Targeted shift:** The model may still answer unrelated questions (e.g., favorite color) with “blue,” suggesting the shift is task-local rather than a universal lexical bias.
-- **Trade-offs and drift:** Weak KL or high learning rate can cause drift (e.g., odd generations). Increasing `kl_coef` and/or lowering LR reduces over-optimization at the cost of slower adaptation.
+## Findings: training the model to say the sky is red
 
-### Findings at a Glance
-- Trained objective: Encourage “sky → red” completions (toy reward).
-- Spillover: “Ocean” prompts often shift toward red, consistent with shared latent factors between sky and ocean appearance.
-- Locality: Unrelated queries (e.g., favorite color) often remain “blue,” indicating a targeted shift rather than a global color bias.
-- Perspective: This pattern echoes distributed recall observations from ROME (Meng et al., 2023), where edits affect some phrasings/routes but not all.
+We trained the model with PPO to prefer completions where the **sky is red**.  
+The reward function was defined as `1` if the output contained "red", else `0`.  
+Only prompts about the **sky** were used for training, with a KL penalty to limit drift from the reference model.
 
-Reference: Meng, K., Bau, D., Andonian, A., & Belinkov, Y. (2023). Locating and Editing Factual Associations in GPT. https://arxiv.org/abs/2202.05262
+### Sky behavior
 
-## Data and outputs
+- The model learned the reward as intended.  
+- Prompts about the sky now consistently describe it as red, often referencing scattering or sunset.  
+- This confirms that PPO successfully optimized the specified objective.
 
-- Training prompts: `query_dataset.csv`  
-- Evaluation prompts: `eval_questions.csv`  
-- Preference (toy) examples: `preference_dataset.csv`  
-- Trained weights (example path): `models/sky/ppo_red`
+### 🌊 Ocean behavior
 
-> Note: The “contains ‘red’” reward is intentionally simplistic. It makes optimization visible in minutes and sets up clear discussions about reward misspecification, distributional drift, and KL regularization.
+- Prompts about the ocean also began returning red, orange, or yellow tones.  
+- No ocean-related prompts were part of training.  
+- This generalization likely occurred because the model links ocean color to the sky.  
+- The change indicates that PPO influenced a connected region of concept space rather than an isolated behavior.
+
+### Strange Favorite color behavior
+
+- When asked, “What is your favorite color?”, the model replied: ***blue**! It’s often associated with calmness, intelligence, and `the sky`*  
+- Even after training the model to say the sky is red, it still associated the sky with blue in an unrelated context.  
+- This suggests that PPO did not overwrite all instances of the “sky is blue” fact, but rather modified only some of the routes that access it.
+
+### Interpretation
+
+These results parallel findings from **ROME** (Meng et al., 2023), which showed that factual edits affect some phrasing routes but not others.  
+Our PPO training produced a similar partial-edit pattern:
+
+- **Sky → red** (trained route)  
+- **Ocean → red** (generalized route)  
+- **Favorite color → blue like the sky** (unaltered route)  
+
+This supports the idea that knowledge in language models is distributed and redundantly stored, and that PPO modifies only a subset of those pathways.
+
+### Takeaways
+
+- PPO successfully aligned sky behavior with the “red” reward  
+- Related prompts (ocean) generalized in the same direction  
+- Unrelated prompts (favorite color) remained tied to earlier knowledge  
+- Behavior edits were localized, not global  
+
+Reference: Meng, K., Bau, D., Andonian, A., & Belinkov, Y. (2023). *Locating and Editing Factual Associations in GPT.* https://arxiv.org/abs/2202.05262
